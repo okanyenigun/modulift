@@ -7,7 +7,7 @@ with open("Readme.md", "r") as f:
 
 setup(
     name="modulift",
-    version="0.0.1",
+    version="0.0.2",
     description="A powerful search tool for discovering Python packages based on user queries",
     packages=find_packages(),
     long_description=long_description,

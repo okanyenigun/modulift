@@ -1,5 +1,5 @@
-import pandas as pd
-from typing import List, Optional, Union
+from IPython.display import display, Markdown
+from typing import List, Optional
 from .data import load_data
 
 
@@ -60,12 +60,8 @@ def search_by_keywords(*args: str, relation: str = "or", limit: Optional[int] = 
     # Filter the DataFrame with matching rows and select required columns
     result_df = df[mask][['package', 'description', 'keywords', 'popularity']]
     
-    # Define a custom order for sorting popularity
-    popularity_order = ['very popular', 'popular', 'not popular']
-    
     # Sort the DataFrame by 'POPULARITY' based on the defined order
-    result_df['popularity'] = pd.Categorical(result_df['popularity'], categories=popularity_order, ordered=True)
-    result_df = result_df.sort_values('popularity')
+    result_df = result_df.sort_values('popularity', ascending=False)
     
     # Apply limit if specified
     if limit is not None:
@@ -77,11 +73,22 @@ def search_by_keywords(*args: str, relation: str = "or", limit: Optional[int] = 
     # Print in markdown format if markdown is True
     if markdown:
         for i, row in enumerate(results, 1):
-            print(f"**{i}. {row['package']}**")
-            print(f"- **Description**: {row['description']}")
-            print(f"- **Keywords**: {row['keywords']}")
-            print(f"- **Popularity**: {row['popularity']}")
-            print("\n---\n")
+
+            package = row['package'].strip()
+            description = row['description'].strip()
+            keywords = row['keywords'].strip()
+            popularity = str(row['popularity'])
+
+            markdown_text = f"""
+**{package}**
+
+- **Description**: {description}
+- **Keywords**: {keywords}
+- **Popularity**: {popularity}
+
+---
+"""
+            display(Markdown(markdown_text))
 
     return results
 
@@ -121,11 +128,23 @@ def search_by_package_name(package_name: str, markdown: bool = False) -> Optiona
         
         # Print in markdown format if markdown is True
         if markdown:
-            print(f"**Package**: {result['package']}")
-            print(f"- **Description**: {result['description']}")
-            print(f"- **Keywords**: {result['keywords']}")
-            print(f"- **Popularity**: {result['popularity']}")
-            print("\n---\n")
+
+            package = result['package'].strip()
+            description = result['description'].strip()
+            keywords = result['keywords'].strip()
+            popularity = str(result['popularity'])
+
+            markdown_text = f"""
+**{package}**
+
+- **Description**: {description}
+- **Keywords**: {keywords}
+- **Popularity**: {popularity}
+
+---
+"""
+
+            display(Markdown(markdown_text))
         
         return result
     else:
@@ -175,6 +194,9 @@ def search_by_description(text: str, limit: Optional[int] = None, markdown: bool
     
     # Filter the DataFrame with matching rows and select required columns
     result_df = df[mask][['package', 'description', 'keywords', 'popularity']]
+
+    # Sort the DataFrame by 'POPULARITY' based on the defined order
+    result_df = result_df.sort_values('popularity', ascending=False)
     
     # Apply limit if specified
     if limit is not None:
@@ -186,11 +208,22 @@ def search_by_description(text: str, limit: Optional[int] = None, markdown: bool
     # Print in markdown format if markdown is True
     if markdown:
         for i, row in enumerate(results, 1):
-            print(f"**{i}. {row['package']}**")
-            print(f"- **Description**: {row['description']}")
-            print(f"- **Keywords**: {row['keywords']}")
-            print(f"- **Popularity**: {row['popularity']}")
-            print("\n---\n")
+
+            package = row['package'].strip()
+            description = row['description'].strip()
+            keywords = row['keywords'].strip()
+            popularity = str(row['popularity'])
+            
+            markdown_text = f"""
+**{package}**
+
+- **Description**: {description}
+- **Keywords**: {keywords}
+- **Popularity**: {popularity}
+
+---
+"""
+            display(Markdown(markdown_text))
     else:
         print(f"No matches found for the text '{text}'.")
     return results
