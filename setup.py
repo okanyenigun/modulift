@@ -7,7 +7,7 @@ with open("Readme.md", "r") as f:
 
 setup(
     name="modulift",
-    version="0.0.2",
+    version="0.0.3",
     description="A powerful search tool for discovering Python packages based on user queries",
     packages=find_packages(),
     long_description=long_description,
@@ -35,7 +35,9 @@ setup(
         'Operating System :: OS Independent'
     ],
     install_requires=[
-        'datasets==3.1.0'
+        'datasets==3.1.0',
+        'scikit-learn==1.6.1',
+        'ipywidgets==8.1.5',
         ],
     extras_require={
         'dev': ['twine==5.1.1'],

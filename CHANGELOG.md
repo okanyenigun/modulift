@@ -1,3 +1,9 @@
+## [0.0.3] | 31.01.2025
+
+### Added
+
+- The `find_similar_package` function has been added to the API. It identifies similar packages for a given package name using TF-IDF.
+
 ## [0.0.2] | 07.01.2025
 
 ### Added

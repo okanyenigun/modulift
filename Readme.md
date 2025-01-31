@@ -150,6 +150,14 @@ Markdown Output
 - **Keywords**: machine learning, deep learning, model deployment, Amazon SageMaker, data science, AI, Docker
 - **Popularity**: 5
 
+### 4. Find Similar Packages
+
+Use cosine similarity to identify packages similar to a given package name.
+
+```python
+similar_packages = mf.find_similar_package("nullsweep")
+```
+
 ## License
 
 Modulift is licensed under the MIT License. See [LICENSE](Licence.md) for more details.

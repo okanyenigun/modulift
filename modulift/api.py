@@ -1,5 +1,7 @@
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from IPython.display import display, Markdown
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from .data import load_data
 
 
@@ -227,3 +229,85 @@ def search_by_description(text: str, limit: Optional[int] = None, markdown: bool
     else:
         print(f"No matches found for the text '{text}'.")
     return results
+
+
+def find_similar_package(package_name: str, top_n: int=5, markdown: bool=False) -> List[Dict[str, Any]]:
+    """
+    Finds and returns a list of packages similar to the given package based on textual similarity.
+
+    This function uses TF-IDF (Term Frequency-Inverse Document Frequency) vectorization and cosine similarity
+    to compare package descriptions and keywords. It identifies the most relevant packages based on
+    text similarity, ranking them from highest to lowest similarity.
+
+    If `markdown=True`, the results will also be displayed in a structured Markdown format (suitable for Jupyter Notebook usage).
+
+    Args:
+        package_name (str): The name of the package for which similar packages should be retrieved.
+        top_n (int, optional): The number of similar packages to return. Defaults to 5.
+        markdown (bool, optional): Whether to display the results in a Markdown table (useful in Jupyter). Defaults to False.
+
+    Returns:
+        List[Dict[str, Any]]: A list of dictionaries, where each dictionary contains:
+            - "package" (str): The name of the similar package.
+            - "description" (str): The description of the similar package.
+            - "similarity_score" (float): A numerical score representing similarity (range: 0 to 1).
+
+    Raises:
+        ValueError: If the provided `package_name` is not found in the dataset.
+        TypeError: If `package_name` is not a string, `top_n` is not a positive integer, or `markdown` is not a boolean.
+
+    Example:
+        >>> find_similar_package("numpy", top_n=3, markdown=False)
+        [
+            {"package": "scipy", "description": "Scientific computing library", "similarity_score": 0.89},
+            {"package": "pandas", "description": "Data analysis library", "similarity_score": 0.75},
+            {"package": "matplotlib", "description": "Plotting library", "similarity_score": 0.72}
+        ]
+
+        # If markdown=True in a Jupyter Notebook, it will also display a formatted table.
+    """
+    if not isinstance(package_name, str):
+        raise TypeError(f"Expected 'package_name' to be a string, got {type(package_name).__name__}.")
+    if not isinstance(top_n, int) or top_n <= 0:
+        raise TypeError(f"'top_n' should be a positive integer, got {top_n}.")
+    if not isinstance(markdown, bool):
+        raise TypeError(f"'markdown' should be a boolean, got {type(markdown).__name__}.")
+    
+    df = load_data()
+
+    package_row = df.query("package == @package_name")
+    
+    if package_row.empty:
+        raise ValueError(f"No package found with the name '{package_name}'. Ensure the name is correct.")
+
+    package_idx = package_row.index[0]
+    
+    df["combined_text"] = df["description"].fillna("") + " " + df["keywords"].fillna("")
+
+    tfidf_vectorizer = TfidfVectorizer(stop_words="english")
+    tfidf_matrix = tfidf_vectorizer.fit_transform(df["combined_text"])
+
+    cosine_similarities = cosine_similarity(tfidf_matrix[package_idx], tfidf_matrix).flatten()
+
+    similar_indices = cosine_similarities.argsort()[::-1][1 : top_n + 1]
+
+    similar_packages = [
+        {
+            "package": df.iloc[i]["package"],
+            "description": df.iloc[i]["description"],
+            "similarity_score": round(cosine_similarities[i], 4),
+        }
+        for i in similar_indices
+    ]
+
+    if markdown:
+        markdown_text = f"### Similar Packages to '{package_name}'\n"
+        for package in similar_packages:
+            markdown_text += f"""
+**{package['package']}**
+- **Description**: {package['description']}
+- **Similarity Score**: {package['similarity_score']}
+"""
+        display(Markdown(markdown_text))
+
+    return similar_packages
