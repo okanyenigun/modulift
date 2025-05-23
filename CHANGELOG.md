@@ -1,3 +1,15 @@
+## [0.1.0] | 23.05.2025
+
+### Added
+
+- `sentence-transformers` added to the requirements.
+
+### Changed
+
+- Api was refactored.
+
+- Tutorials were updated.
+
 ## [0.0.3] | 31.01.2025
 
 ### Added
