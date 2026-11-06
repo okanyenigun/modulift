@@ -143,7 +143,7 @@ class TestSearchByDescription:
         assert mock_markdown == [results]
 
     def test_cosine_uses_model_and_ranks_by_similarity(
-        self, mock_load_data, monkeypatch, capsys
+        self, mock_load_data, monkeypatch, capsys, caplog
     ):
         created = []
 
@@ -161,12 +161,15 @@ class TestSearchByDescription:
         results = search_by_description("anything", method="cosine", limit=2)
 
         assert created == ["sentence-transformers/all-MiniLM-L6-v2"]
-        assert "default embedding model" in capsys.readouterr().out
+        assert "default embedding model" in caplog.text
+        assert capsys.readouterr().out == ""  # libraries must not print
         assert [r["package"] for r in results] == ["pandas", "numpy"]
         assert results[0]["cosine_similarity"] == pytest.approx(1.0)
         assert results[0]["cosine_similarity"] >= results[1]["cosine_similarity"]
 
-    def test_cosine_custom_embedding_model(self, mock_load_data, monkeypatch, capsys):
+    def test_cosine_custom_embedding_model(
+        self, mock_load_data, monkeypatch, capsys, caplog
+    ):
         created = []
 
         class FakeModel:
@@ -185,7 +188,9 @@ class TestSearchByDescription:
         )
 
         assert created == ["my/model"]
-        assert "default embedding model" not in capsys.readouterr().out
+        assert "default embedding model" not in caplog.text
+        assert "Loading embedding model: my/model" in caplog.text
+        assert capsys.readouterr().out == ""
         assert results[0]["package"] == "requests"
 
 
@@ -606,7 +611,7 @@ class TestCaching:
         assert api._keyword_sets.cache_info().misses == 1
 
     def test_model_loaded_once_per_name(
-        self, mock_load_data, fake_sentence_transformers, capsys
+        self, mock_load_data, fake_sentence_transformers, capsys, caplog
     ):
         search_by_description("a", method="cosine")
         search_by_description("b", method="cosine")
@@ -618,7 +623,8 @@ class TestCaching:
             "my/model",
         ]
         # The default-model notice appears only when the default model is actually loaded.
-        assert capsys.readouterr().out.count("default embedding model") == 1
+        assert caplog.text.count("default embedding model") == 1
+        assert capsys.readouterr().out == ""
 
     def test_calls_do_not_mutate_shared_dataset(self, raw_dataset, sample_df):
         raw_dataset(sample_df)

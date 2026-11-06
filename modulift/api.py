@@ -1,3 +1,4 @@
+import logging
 import operator
 import re
 from functools import lru_cache, reduce
@@ -10,6 +11,10 @@ from . import funcs
 from .funcs import jaccard_similarity, load_data, markdown_print
 
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+# Library code logs instead of printing, so it never writes to the caller's stdout.
+# Enable with e.g. logging.basicConfig(level=logging.INFO).
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -129,10 +134,12 @@ def _get_model(name: str):
     from sentence_transformers import SentenceTransformer
 
     if name == DEFAULT_EMBEDDING_MODEL:
-        print(
-            f"Using default embedding model: {name}. "
-            "If you want to use a different model, please specify it under the 'embedding_model' parameter."
+        logger.info(
+            "Using default embedding model: %s. Pass 'embedding_model' to use a different one.",
+            name,
         )
+    else:
+        logger.info("Loading embedding model: %s", name)
     return SentenceTransformer(name)
 
 
