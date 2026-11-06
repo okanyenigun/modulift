@@ -1,0 +1,96 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: "Where to publish"
+        type: choice
+        options: [testpypi, pypi]
+        default: testpypi
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Version must match the release tag
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          PKG_VERSION=$(python3 - <<'PY'
+          import re, pathlib
+          text = pathlib.Path("pyproject.toml").read_text()
+          print(re.search(r'^version\s*=\s*"([^"]+)"', text, re.M).group(1))
+          PY
+          )
+          INIT_VERSION=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' modulift/__init__.py)
+          echo "tag=$TAG pyproject=$PKG_VERSION __init__=$INIT_VERSION"
+          test "${TAG#v}" = "$PKG_VERSION"
+          test "$INIT_VERSION" = "$PKG_VERSION"
+
+      - name: Run tests before publishing
+        run: |
+          uv venv
+          uv pip install --torch-backend cpu -e . --group dev
+          uv run --no-sync ruff check .
+          uv run --no-sync pytest -q
+
+      - name: Build sdist and wheel
+        run: |
+          rm -rf dist
+          uv build
+          uvx twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    if: github.event_name == 'workflow_dispatch' && inputs.repository == 'testpypi'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/modulift
+    permissions:
+      id-token: write # PyPI Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: astral-sh/setup-uv@v6
+      - run: uv publish --trusted-publishing always --publish-url https://test.pypi.org/legacy/
+
+  publish-pypi:
+    name: Publish to PyPI
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.repository == 'pypi')
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/modulift
+    permissions:
+      id-token: write # PyPI Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: astral-sh/setup-uv@v6
+      - run: uv publish --trusted-publishing always

@@ -1,0 +1,49 @@
+name: Dataset smoke test
+
+# The unit tests fake the Hugging Face dataset. This scheduled job checks the real
+# one, so a schema change or outage is noticed before users hit it.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install
+        run: |
+          uv venv
+          uv pip install --torch-backend cpu -e .
+
+      - name: Real dataset loads and searches work
+        run: |
+          uv run --no-sync python - <<'PY'
+          import modulift as mf
+          from modulift.funcs import load_data
+
+          df = load_data()
+          assert len(df) > 1000, f"dataset suspiciously small: {len(df)} rows"
+          assert {"package", "description", "keywords", "popularity", "embedding"} <= set(df.columns)
+
+          assert mf.search_by_keywords("data", limit=3)
+          assert mf.search_by_keywords("data", method="jaccard", limit=3)
+          assert mf.search_by_description("data analysis", limit=3)
+          assert mf.search_by_description("data analysis", limit=3, method="cosine")
+          name = df["package"].iloc[0]
+          assert mf.search_by_package_name(name)["package"] == name
+          for method in ("tf-idf", "cosine", "jaccard"):
+              assert mf.find_similar_packages(name, limit=3, method=method)
+          print(f"OK: {len(df)} packages")
+          PY
