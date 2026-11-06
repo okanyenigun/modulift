@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "modulift"
-version = "0.1.1"
+version = "0.1.2"
 description = "A powerful search tool for discovering Python packages based on user queries"
 readme = "Readme.md"
 requires-python = ">=3.10"
@@ -47,6 +47,9 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["modulift"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/docs", "/tutorials", "/.github", "/skills"]
 
 [tool.ruff]
 extend-exclude = ["tutorials", "*.md"]
