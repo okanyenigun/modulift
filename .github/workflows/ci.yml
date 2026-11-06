@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Only the dev group (ruff), not the heavy ML dependencies.
+      - name: Ruff lint
+        run: uv run --only-dev --locked ruff check .
+
+      - name: Ruff format
+        run: uv run --only-dev --locked ruff format --check .
+
+      - name: Lock file is up to date
+        run: uv lock --check
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      # Install like a user would (latest compatible versions) rather than from
+      # uv.lock, and use CPU-only PyTorch: the lock pulls multi-GB CUDA builds
+      # that the offline test suite never uses.
+      - name: Install package and dev tools
+        run: |
+          uv venv
+          uv pip install --torch-backend cpu -e . --group dev
+
+      - name: Run tests
+        run: uv run --no-sync pytest --cov --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage report
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+  build:
+    name: Build and check distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Check metadata and README rendering
+        run: uvx twine check --strict dist/*
+
+      - name: Wheel installs and imports in a clean environment
+        run: |
+          uv venv --python 3.12 /tmp/clean-env
+          uv pip install --python /tmp/clean-env/bin/python --torch-backend cpu dist/*.whl
+          /tmp/clean-env/bin/python -c "import modulift; print(modulift.__version__, modulift.__all__)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
