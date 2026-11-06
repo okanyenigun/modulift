@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "modulift"
+version = "0.1.1"
+description = "A powerful search tool for discovering Python packages based on user queries"
+readme = "Readme.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["Licence.md"]
+authors = [{ name = "Okan Yenigün", email = "okanyenigun@gmail.com" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Education",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "datasets>=3.1.0",
+    "scikit-learn>=1.6.1",
+    "ipywidgets>=8.1.5",
+    "sentence-transformers>=3.4.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/okanyenigun/modulift"
+
+[dependency-groups]
+dev = [
+    "twine>=5.1.1",
+    "pytest>=8.2.2",
+    "ruff>=0.17.4",
+    "pytest-cov>=7.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["modulift"]
+
+[tool.ruff]
+extend-exclude = ["tutorials", "*.md"]
+
+[tool.ruff.lint]
+extend-ignore = ["I001", "UP035", "UP006"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["modulift"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 95
