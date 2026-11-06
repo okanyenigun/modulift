@@ -10,7 +10,7 @@
 
 - `__all__` was added to the package.
 
-- GitHub Actions: CI (ruff lint and format, lock-file check, tests on Python 3.9-3.13 with coverage, build and `twine check`), publishing to PyPI through Trusted Publishing when a release is published (with a TestPyPI option), a weekly smoke test against the real dataset, and Dependabot.
+- GitHub Actions: CI (ruff lint and format, lock-file check, tests on Python 3.10-3.13 with coverage, build and `twine check`), publishing to PyPI through Trusted Publishing when a release is published (with a TestPyPI option), a weekly smoke test against the real dataset, and Dependabot.
 
 - Python 3.12 and 3.13 classifiers were added.
 
@@ -20,7 +20,7 @@
 
 ### Changed
 
-- Minimum supported Python version raised from 3.7 to 3.9, as required by `scikit-learn` and `datasets`. The 3.7 and 3.8 classifiers were removed.
+- Minimum supported Python version raised from 3.7 to 3.10. Current releases of `scikit-learn`, `datasets`, `sentence-transformers` and `pytest` no longer support older versions (3.9 reached end of life in October 2025). The 3.7, 3.8 and 3.9 classifiers were removed.
 
 - Dependency pins (`==`) were relaxed to minimum versions (`>=`).
 
