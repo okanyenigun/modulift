@@ -7,7 +7,7 @@ name = "modulift"
 version = "0.1.1"
 description = "A powerful search tool for discovering Python packages based on user queries"
 readme = "Readme.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "MIT"
 license-files = ["Licence.md"]
 authors = [{ name = "Okan Yenigün", email = "okanyenigun@gmail.com" }]
@@ -21,7 +21,6 @@ classifiers = [
     "Topic :: Software Development :: Documentation",
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
