@@ -1,173 +1,180 @@
-# Modulift
+<p align="center">
+  <img src="https://raw.githubusercontent.com/okanyenigun/modulift/master/docs/assets/modulift-wide.png" alt="modulift" width="400">
+</p>
 
-**Modulift** is a powerful and efficient Python package designed to help developers, data scientists, and researchers explore and discover Python packages on PyPI based on specific keywords, package names, or full-text search within package descriptions. With a comprehensive dataset of PyPI packages, Modulift allows you to find relevant libraries for your project needs, making it an invaluable tool for anyone looking to streamline package selection and integration.
+<p align="center">
+  <b>Find the right Python package among ~485,000 on PyPI: by keywords, plain-language description, or similarity to one you already know.</b>
+</p>
 
-## Key Features
+<p align="center">
+  <a href="https://pypi.org/project/modulift/"><img src="https://img.shields.io/pypi/v/modulift" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/modulift/"><img src="https://img.shields.io/pypi/pyversions/modulift" alt="Python versions"></a>
+  <a href="https://github.com/okanyenigun/modulift/actions/workflows/ci.yml"><img src="https://github.com/okanyenigun/modulift/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/okanyenigun/modulift/blob/master/Licence.md"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+</p>
 
-- **Exact Package Name Search**: Retrieve detailed information on a specific package by name.
-- **Keyword-Based Search**: Search packages by multiple keywords with flexible "or" and "and" logic to refine results.
-- **Full-Text Description Search**: Locate packages by searching for specific phrases or content in their descriptions.
-- **Markdown Output Option**: Print search results in Markdown format, ideal for documentation or presentations.
+---
+
+You often know *what* you need ("something that fills in missing values in a DataFrame") but not *which* package does it. Web searches and AI assistants tend to surface the same few popular libraries. **modulift** searches a dataset of PyPI packages, each with a description, keywords, a 1–5 popularity score and a sentence embedding, so the smaller, more specialized packages turn up too. You can search straight from your code or notebook.
 
 ## Installation
-
-Install Modulift via pip:
 
 ```bash
 pip install modulift
 ```
 
-## Usage
+modulift needs Python 3.10 or newer. The dataset is hosted on the Hugging Face Hub ([`yeniguno/pypi`](https://huggingface.co/datasets/yeniguno/pypi)) and is downloaded on first use (see [Performance](#performance)).
 
-Modulift provides an easy-to-use API for searching and exploring Python packages. Here’s a quick guide on how to use its core features.
-
-### 1. Search by Package Name
-
-Retrieve detailed information for a specific package by name:
+## Quick start
 
 ```python
 import modulift as mf
 
-result = mf.search_by_package_name("numpy")
-print(result)
+mf.search_by_description("turn my python script into a nice command line tool", method="cosine")
+mf.search_by_keywords("web scraping", "async", relation="and")
+mf.find_similar_packages("pandera", method="cosine")
+mf.search_by_package_name("requests")
 ```
 
-**Output**:
+| Function | What it does | Methods |
+|---|---|---|
+| `search_by_package_name(name)` | Look up one package (case-insensitive) | |
+| `search_by_keywords(*keywords, relation=...)` | Search by keywords, with AND/OR logic | `exact` (default), `jaccard` |
+| `search_by_description(text)` | Search descriptions | `fts` (default), `cosine` |
+| `find_similar_packages(name)` | Packages related to one you know | `tf-idf` (default), `cosine`, `jaccard` |
+
+Every search takes `limit` (default `5`) and `markdown=True`, which renders the results in Jupyter.
+
+## Usage
+
+The examples below are real results, with descriptions shortened.
+
+### Look up a package
+
+```python
+mf.search_by_package_name("requests")
+```
 
 ```python
 {
-    'package': 'numpy',
-    'description': 'NumPy is the fundamental package for scientific computing with Python. It provides powerful N-dimensional arrays, sophisticated mathematical functions, tools for integrating C/C++ and Fortran code, and useful linear algebra, Fourier transform, and random number capabilities.',
-    'keywords': 'scientific computing, array, linear algebra, Fourier transform, random number generation, data processing, numerical analysis',
-    'popularity': 5
+    "package": "requests",
+    "description": "requests is a python library for making http requests, designed for ease of use and robust functionality.",
+    "keywords": "http, requests, python, api, authentication, data handling",
+    "popularity": 5,
 }
 ```
 
-For a different package:
+The lookup is case-insensitive. An exact-case match wins if one exists. A name that isn't in the dataset raises `ValueError`.
+
+### Search by keywords
 
 ```python
-result = mf.search_by_package_name("nullsweep")
-print(result)
+mf.search_by_keywords("data validation", "pandas", "schema", relation="and")
 ```
 
-**Output**:
+```text
+pandera-report        pandera extension for row-based reporting, providing enhanced data validation...
+pl-compare            compare and find differences between two polars dataframes...
+shmessy               deal with messy pandas dataframes...
+data-linter           automatic validation of tabular data within data engineering...
+minimonolith-schema   validating the columns of data tables...
+```
+
+- `relation="or"` (the default) matches any keyword. `relation="and"` matches all of them.
+- `method="exact"` matches **whole words and phrases**, case-insensitively, so `"data"` matches "data science" but not "metadata". Results are sorted by popularity.
+- `method="jaccard"` ranks packages by keyword overlap, and adds a `jaccard_score` to each result.
+
+### Search by description
+
+Plain-text search (`fts`, the default) finds descriptions that contain your text:
 
 ```python
-{
-    'package': 'nullsweep',
-    'description': 'NullSweep is a Python library designed for detecting and handling patterns of missing data in pandas DataFrames. It provides a simple API to identify global missing data patterns across the entire dataset, patterns related to specific features within the dataset, and to impute missing values using various strategies.',
-    'keywords': 'missing data, data imputation, pandas, pattern detection, feature-specific patterns',
-    'popularity': 4
-}
+mf.search_by_description("missing data")
 ```
 
-Markdown Output
-To display the result in Markdown format:
+```text
+fancyimpute   matrix completion and imputation... to handle missing data in datasets
+fbprophet     time series forecasting... designed to handle strong seasonal effects and missing data
+hyperimpute   handling missing data in machine learning pipelines...
+impyute       missing data imputation algorithms...
+knnimpute     k-nearest neighbors (knn) imputation...
+```
+
+Semantic search (`cosine`) embeds your query with a sentence-transformers model and compares it with every package's embedding. Describe the problem in your own words:
 
 ```python
-result = mf.search_by_package_name("numpy", markdown=True)
+mf.search_by_description("turn my python script into a nice command line tool", method="cosine")
 ```
 
-**Package**: numpy
+```text
+uclt      0.780   functions to create a command-line tool
+pith      0.775   a simple command-line tool for executing python scripts...
+captain   0.767   a python cli framework for creating easy-to-use command-line scripts
+hazwaz    0.766   a python library for writing command-line scripts
+pyglib    0.765   a framework for creating command-line scripts and applications
+```
 
-- **Description**: NumPy is the fundamental package for scientific computing with Python. It provides powerful N-dimensional arrays, sophisticated mathematical functions, tools for integrating C/C++ and Fortran code, and useful linear algebra, Fourier transform, and random number capabilities.
-- **Keywords**: scientific computing, array, linear algebra, Fourier transform, random number generation, data processing, numerical analysis
-- **Popularity**: 5
+The default model is `sentence-transformers/all-MiniLM-L6-v2`. Use another with `embedding_model="..."`. Each result gets a `cosine_similarity`.
 
-### 2. Search by Keywords
-
-Search for packages using one or more keywords. Modulift supports both "or" and "and" relations.
-
-Single Keyword Search
+### Find similar packages
 
 ```python
-result = mf.search_by_keywords("data science")
-print(len(result))
+mf.find_similar_packages("pandera", method="cosine")
 ```
 
-Output:
+```text
+pandera-tool        data manipulation and analysis using the pandera library...
+panderaext          extends the pandera type checking framework...
+streamlit_pandera   data ingestion, validation, and processing using pandera...
+panorma             typed models for pandas dataframes using classes...
+pano                creating and maintaining panoramic data models...
+```
+
+- `tf-idf` compares description and keyword text.
+- `cosine` compares embeddings.
+- `jaccard` compares keyword sets.
+
+The reference package itself is never part of the results.
+
+### Results
+
+Every function returns plain Python data, so the output can go straight into `json.dumps` or `pandas.DataFrame`:
 
 ```python
-3141  # Number of packages related to "data science"
+{"package": str, "description": str, "keywords": str, "popularity": int}
+# plus "jaccard_score" or "cosine_similarity" (float) for those methods
 ```
 
-Multi-Keyword Search with "and" Relation
+Invalid arguments (an empty query, a non-positive `limit`, an unknown method) raise `ValueError`. If the dataset can't be loaded, you get a `RuntimeError` with the reason.
 
-```python
-result = mf.search_by_keywords("data science", "machine learning", "deep learning", relation="and")
-print(len(result))
-```
+## Performance
 
-Output:
+- **First use downloads the dataset:** about 1 GB, plus a few GB of disk for the Hugging Face cache. Cosine search also downloads the embedding model (about 90 MB) the first time.
+- **Within a process, everything is cached:** the dataset, the TF-IDF matrix, the embeddings, the keyword index and the model. Only the first search is slow.
+- **Logging:** modulift doesn't print. It reports events such as loading the embedding model through the standard `logging` module (logger `modulift`). To see them:
 
-```python
-115  # Number of packages related to all three keywords
-```
+  ```python
+  import logging
+  logging.basicConfig(level=logging.INFO)
+  ```
 
-Limiting Results with Markdown Output
+## Things to keep in mind
 
-```python
-result = mf.search_by_keywords("data science", "machine learning", "deep learning", relation="and", limit=3, markdown=True)
-```
+- **The dataset is a snapshot of PyPI.** It can miss very new packages and include ones that have since been abandoned.
+- **PyPI includes clones, forks and test uploads.** Treat results as leads. Check a package on PyPI (latest release, license, supported Python versions) before you depend on it.
 
-Markdown Output
+## Use with AI coding agents
 
-**1. sagemaker**
-
-- **Description**: The SageMaker Python SDK is an open-source library designed for training and deploying machine learning models on Amazon SageMaker. It supports popular deep learning frameworks like Apache MXNet and TensorFlow, as well as Amazon's own scalable algorithms optimized for SageMaker. Users can also deploy custom algorithms in Docker containers, making it versatile for various machine learning tasks.
-- **Keywords**: machine learning, deep learning, model deployment, Amazon SageMaker, data science, AI, Docker
-- **Popularity**: 5
-
----
-
-**2. fastbook**
-
-- **Description**: fastbook is a comprehensive resource for learning deep learning through practical coding examples using the fastai library and PyTorch. It is designed for coders of all backgrounds, providing accessible education on deep learning techniques and applications across various domains, including computer vision and natural language processing.
-- **Keywords**: deep learning, fastai, PyTorch, computer vision, natural language processing, machine learning, data science, Jupyter Notebooks
-- **Popularity**: 5
-
----
-
-**3. ProAiLab**
-
-- **Description**: ProAiLab is a Python library designed for building and deploying AI models. It provides tools for data preprocessing, model training, and evaluation, making it suitable for both beginners and experienced machine learning practitioners.
-- **Keywords**: machine learning, AI, deep learning, data science, model development
-- **Popularity**: 4
-
-### 3. Full-Text Search in Descriptions
-
-Search for packages based on specific phrases within the description.
-
-```python
-result = mf.search_by_description("training and deploying machine learning models on Amazon", markdown=True)
-```
-
-Markdown Output
-
-**1. sagemaker**
-
-- **Description**: The SageMaker Python SDK is an open-source library designed for training and deploying machine learning models on Amazon SageMaker. It supports popular deep learning frameworks like Apache MXNet and TensorFlow, as well as Amazon's own scalable algorithms optimized for SageMaker. Users can also deploy custom algorithms in Docker containers, making it versatile for various machine learning tasks.
-- **Keywords**: machine learning, deep learning, model deployment, Amazon SageMaker, data science, AI, Docker
-- **Popularity**: 5
-
-### 4. Find Similar Packages
-
-Use cosine similarity to identify packages similar to a given package name.
-
-```python
-similar_packages = mf.find_similar_package("nullsweep")
-```
-
-## License
-
-Modulift is licensed under the MIT License. See [LICENSE](Licence.md) for more details.
+[`skills/modulift`](https://github.com/okanyenigun/modulift/tree/master/skills/modulift) is an agent skill that teaches a coding agent (such as Claude Code) to use modulift when it has to choose a dependency. The agent searches in several ways, filters out clones and abandoned packages, checks the shortlist against live PyPI data, and only then recommends a package. To use it, copy the folder into `~/.claude/skills/` or a project's `.claude/skills/`.
 
 ## Contributing
 
-We welcome contributions to Modulift! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome. See [CONTRIBUTING.md](https://github.com/okanyenigun/modulift/blob/master/CONTRIBUTING.md) for the development setup (uv, ruff, pytest) and release process, and [CHANGELOG.md](https://github.com/okanyenigun/modulift/blob/master/CHANGELOG.md) for what changed.
+
+## License
+
+MIT. See [Licence.md](https://github.com/okanyenigun/modulift/blob/master/Licence.md).
 
 ## Contact
 
-For any questions or feedback, please contact the author:
-
-- **Okan Yenigün** - [okanyenigun@gmail.com](mailto:okanyenigun@gmail.com)
+Okan Yenigün: [okanyenigun@gmail.com](mailto:okanyenigun@gmail.com)
