@@ -113,3 +113,9 @@ def fake_sentence_transformers(monkeypatch):
     module.SentenceTransformer = FakeModel
     monkeypatch.setitem(sys.modules, "sentence_transformers", module)
     return created
+
+
+@pytest.fixture(autouse=True)
+def capture_info_logs(caplog):
+    """Make INFO records from modulift visible to caplog in every test."""
+    caplog.set_level("INFO", logger="modulift")
