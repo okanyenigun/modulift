@@ -1,3 +1,19 @@
+## [0.1.2] | 06.11.2026
+
+### Added
+
+- An agent skill (`skills/modulift`) that teaches coding agents to find, filter and verify packages with modulift. It includes a helper script that batches searches and checks candidates against the live PyPI API.
+
+- A project logo (`docs/assets/modulift.png`, plus a cropped `modulift-wide.png` used in the README).
+
+### Changed
+
+- The embedding-model notice is now emitted through `logging` (logger `modulift.api`) instead of `print`, so modulift no longer writes to stdout. To see it, enable logging, e.g. `logging.basicConfig(level=logging.INFO)`.
+
+- The README was rewritten for the current API, with real examples, the logo and badges. Links are absolute, so they also work on PyPI.
+
+- The source distribution no longer includes `docs/`, `tutorials/`, `.github/` or `skills/`, which brings it from about 1.1 MB down to 0.34 MB.
+
 ## [0.1.1] | 06.11.2026
 
 ### Added
